@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.utils import resample
 from imblearn.over_sampling import SMOTE
+import random
+import string
 
 def combine_datasets(malicious_file, spam_file, output_file):
     # Load the datasets
@@ -51,10 +53,19 @@ def class_imbalance_analysis(final_data):
     plt.ylabel('Count')
     plt.xticks(rotation=45)
 
-    plt.savefig('class_distribution_bal.png') 
+    plt.savefig('class_distribution.png') 
     plt.show()
 
-    
+def generate_random_url(label_type):
+    """
+    Generate a random URL based on the label type.
+    """
+    domains = ['.com', '.net', '.org', '.biz', '.info']
+    protocols = ['http://', 'https://']
+    random_url = random.choice(protocols) + ''.join(random.choices(string.ascii_lowercase + string.digits, k=10)) + random.choice(domains)
+    return random_url
+
+
 def balance_datasets(preprocess_datasets, balanced_data_out):
     # Step 1: Balancing the dataset
 
@@ -78,16 +89,26 @@ def balance_datasets(preprocess_datasets, balanced_data_out):
     smote = SMOTE(sampling_strategy={'malware': 95000, 'spam': 95000}, random_state=42)
     smote_features, smote_labels = smote.fit_resample(minority_data[['label']], minority_data['type'])
 
-    # Create a new dataframe from the generated samples
-    smote_generated = pd.DataFrame({'url': ['Generated URL']*len(smote_labels), 'type': smote_labels})
+    # Generate synthetic URLs for the new samples
+    synthetic_urls = [generate_random_url(label) for label in smote_labels]
 
-    # Combine all the datasets
-    balanced_data = pd.concat([benign_downsampled, defacement_data, phishing_data, smote_generated], ignore_index=True)
+    # Create DataFrame of generated URLs
+    smote_generated = pd.DataFrame({'url': synthetic_urls, 'type': smote_labels})
+    smote_generated['label'] = smote_generated['type'].map({'malware': 3, 'spam': 4})
+
+    # Combine all original data along with the generated samples
+    balanced_data = pd.concat([
+        benign_downsampled, 
+        defacement_data, 
+        phishing_data, 
+        malware_data, 
+        spam_data, 
+        smote_generated
+    ], ignore_index=True)
 
     # Save the balanced dataset to a CSV file
     balanced_data.to_csv(balanced_data_out, index=False)
     print(f"Balanced dataset saved successfully at {balanced_data_out}")
-
 
 
 if __name__ == "__main__":
@@ -98,29 +119,34 @@ if __name__ == "__main__":
     clean_data = "final_data.csv"
     balanced_data = "balanced_data.csv"
 
-    # Combining datasets
+    # step 01: Combining datasets
     # combine_datasets(malicious_file, spam_file, output_file)
 
     # Read combined dataset csv
     # combine_datasets = pd.read_csv(output_file)
     # print(len(combine_datasets))
 
-    # # preprocess datasets
+    ########################
+
+    # step 2 : preprocess datasets
     # preprocess_datasets(combine_datasets, clean_data)
 
     # Read preprocessed dataset csv
-    # preprocess_datasets = pd.read_csv(clean_data)
-    # print(len(preprocess_datasets))
+    preprocess_datasets = pd.read_csv(clean_data)
+    print(len(preprocess_datasets))
 
-    # class_imbalance_analysis(preprocess_datasets)
+    class_imbalance_analysis(preprocess_datasets)
+    
+    ########################
 
-    # balance_datasets(preprocess_datasets, balanced_data)
+    # step 3
+    balance_datasets(preprocess_datasets, balanced_data)
 
-    # Read balance_datasetst csv
-    final_balanaced = pd.read_csv(balanced_data)
-    print(len(final_balanaced))
+    # # # Read balance_datasetst csv
+    # final_balanaced = pd.read_csv(balanced_data)
+    # print(len(final_balanaced))
 
-    class_imbalance_analysis(final_balanaced)
+    # class_imbalance_analysis(final_balanaced)
 
 
     # CLASS BALANCING DONE, balanced_data.csv IS OUR FINAL FILE NOW 
