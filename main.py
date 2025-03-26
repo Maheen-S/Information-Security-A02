@@ -180,6 +180,74 @@ def tfidf_vectorization(balanced_data):
     return tfidf_features, vectorizer
 
 
+#FOR VISUALIZATIONS
+def class_distribution_plot(balanced_data):
+    """
+    Plot the distribution of classes after balancing.
+    """
+    plt.figure(figsize=(10, 6))
+    sns.countplot(x='type', data=balanced_data, palette='viridis')
+    plt.title('Class Distribution After Balancing')
+    plt.xlabel('Class Labels')
+    plt.ylabel('Number of Samples')
+    plt.savefig('class_distribution.png') 
+    plt.show()
+
+def visualize_special_char_count(balanced_data):
+    """
+    Plot the distribution of special character counts by label type.
+    """
+    balanced_data['special_char_count'] = balanced_data['url'].apply(lambda x: len(re.findall(r'[^a-zA-Z0-9]', x)))
+
+    plt.figure(figsize=(12, 6))
+    sns.histplot(data=balanced_data, x='special_char_count', hue='type', bins=30, kde=True, palette='Set2')
+    plt.title('Special Character Count Distribution Across Classes')
+    plt.xlabel('Special Character Count')
+    plt.ylabel('Frequency')
+    plt.savefig('special_char_count.png') 
+    plt.show()
+
+def plot_correlation_heatmap(balanced_data):
+    """
+    Plot correlation heatmap of structural features.
+    """
+    structural_features = ['url_length', 'num_digits', 'num_subdomains', 'num_special_chars']
+    correlation_matrix = balanced_data[structural_features].corr()
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
+    plt.title('Correlation Heatmap of Structural Features')
+    plt.savefig('correlation_heatmap.png') 
+    plt.show()
+
+def improved_url_length_distribution(balanced_data):
+    """
+    Plot the URL length distribution across different classes.
+    """
+    plt.figure(figsize=(12, 6))
+    sns.histplot(data=balanced_data, x='url_length', hue='type', element='step', bins=50, palette='tab10', kde=True)
+    plt.title('URL Length Distribution Across Classes')
+    plt.xlabel('URL Length')
+    plt.ylabel('Frequency')
+    plt.savefig('length_distribution.png') 
+    plt.show()
+
+def keyword_presence_analysis(balanced_data):
+    """
+    Plot keyword presence analysis across classes.
+    """
+    keyword_counts = balanced_data.groupby(['type', 'contains_suspicious_keyword']).size().reset_index(name='Count')
+    
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=keyword_counts, x='type', y='Count', hue='contains_suspicious_keyword', palette='viridis')
+    plt.title('Keyword Presence Analysis Across Classes')
+    plt.xlabel('URL Type')
+    plt.ylabel('Count')
+    plt.legend(title='Contains Suspicious Keyword', labels=['No', 'Yes'])
+    plt.savefig('keyword_presense_analysis.png') 
+    plt.show()
+
+
 if __name__ == "__main__":
     # File paths
     malicious_file = "malicious_phish.csv"
@@ -224,8 +292,6 @@ if __name__ == "__main__":
     generate_descriptive_statistics(final_balanaced)
     url_structure_analysis(final_balanaced)
 
-    # step 5: 
-
 
     # step 6: 
     final_balanaced = structural_feature_extraction(final_balanaced)
@@ -240,5 +306,11 @@ if __name__ == "__main__":
     # CLASS BALANCING DONE, balanced_data.csv IS OUR FINAL FILE NOW 
 
 
+    # Step 5: Generate Graphs and Plots
+    class_distribution_plot(final_balanaced)
+    visualize_special_char_count(final_balanaced)
+    plot_correlation_heatmap(final_balanaced)
+    improved_url_length_distribution(final_balanaced)
+    keyword_presence_analysis(final_balanaced)
 
 
