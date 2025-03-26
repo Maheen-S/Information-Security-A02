@@ -4,6 +4,8 @@ from sklearn.utils import resample
 from imblearn.over_sampling import SMOTE
 import random
 import string
+import seaborn as sns
+import re
 
 def combine_datasets(malicious_file, spam_file, output_file):
     # Load the datasets
@@ -110,6 +112,46 @@ def balance_datasets(preprocess_datasets, balanced_data_out):
     balanced_data.to_csv(balanced_data_out, index=False)
     print(f"Balanced dataset saved successfully at {balanced_data_out}")
 
+def visualize_url_length_distribution(balanced_data):
+    """
+    Plot the distribution of URL lengths by label type.
+    """
+    balanced_data['url_length'] = balanced_data['url'].apply(len)
+    plt.figure(figsize=(12, 6))
+    sns.histplot(data=balanced_data, x='url_length', hue='type', element='step', bins=50, palette='Set2')
+    plt.title('Distribution of URL Lengths by Label')
+    plt.xlabel('URL Length')
+    plt.ylabel('Frequency')
+    plt.savefig('url_length_distribution.png') 
+    plt.show()
+
+def generate_descriptive_statistics(balanced_data):
+    """
+    Generate and display descriptive statistics of the dataset.
+    """
+    descriptive_stats = balanced_data.describe(include='all')
+    print(descriptive_stats)
+
+def url_structure_analysis(balanced_data):
+    """
+    Perform URL structure analysis and display the number of URLs containing 'https' for each label.
+    Also, identify malicious patterns in URLs.
+    """
+    # Checking for presence of 'https'
+    balanced_data['contains_https'] = balanced_data['url'].apply(lambda x: 'https' in x)
+
+    # Checking for IP addresses in URLs
+    balanced_data['contains_ip'] = balanced_data['url'].apply(lambda x: bool(re.search(r'\d+\.\d+\.\d+\.\d+', x)))
+
+    # Checking for suspicious keywords in URLs
+    keywords = ['login', 'verify', 'click', 'free', 'password', 'account', 'update']
+    balanced_data['contains_suspicious_keyword'] = balanced_data['url'].apply(lambda x: any(keyword in x.lower() for keyword in keywords))
+
+    # Generate token summary
+    token_summary = balanced_data.groupby(['type', 'contains_https', 'contains_ip', 'contains_suspicious_keyword']).size().reset_index(name='Count')
+
+    # Displaying results
+    print(token_summary)
 
 if __name__ == "__main__":
     # File paths
@@ -132,21 +174,29 @@ if __name__ == "__main__":
     # preprocess_datasets(combine_datasets, clean_data)
 
     # Read preprocessed dataset csv
-    preprocess_datasets = pd.read_csv(clean_data)
-    print(len(preprocess_datasets))
+    # preprocess_datasets = pd.read_csv(clean_data)
+    # print(len(preprocess_datasets))
 
-    class_imbalance_analysis(preprocess_datasets)
+    # class_imbalance_analysis(preprocess_datasets)
     
     ########################
 
     # step 3
-    balance_datasets(preprocess_datasets, balanced_data)
+    # balance_datasets(preprocess_datasets, balanced_data)
 
-    # # # Read balance_datasetst csv
-    # final_balanaced = pd.read_csv(balanced_data)
+    # # Read balance_datasetst csv
+    final_balanaced = pd.read_csv(balanced_data)
     # print(len(final_balanaced))
 
     # class_imbalance_analysis(final_balanaced)
+        
+    ########################
+
+    # step 4: EDA
+    visualize_url_length_distribution(final_balanaced)
+    generate_descriptive_statistics(final_balanaced)
+    url_structure_analysis(final_balanaced)
+
 
 
     # CLASS BALANCING DONE, balanced_data.csv IS OUR FINAL FILE NOW 
