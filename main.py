@@ -6,6 +6,7 @@ import random
 import string
 import seaborn as sns
 import re
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 def combine_datasets(malicious_file, spam_file, output_file):
     # Load the datasets
@@ -153,6 +154,32 @@ def url_structure_analysis(balanced_data):
     # Displaying results
     print(token_summary)
 
+#######################################################################################################################
+
+def structural_feature_extraction(balanced_data):
+    """
+    Extract structural features from URLs.
+    """
+    balanced_data['url_length'] = balanced_data['url'].apply(len)
+    balanced_data['num_digits'] = balanced_data['url'].apply(lambda x: sum(c.isdigit() for c in x))
+    balanced_data['num_subdomains'] = balanced_data['url'].apply(lambda x: x.count('.'))
+    balanced_data['num_special_chars'] = balanced_data['url'].apply(lambda x: len(re.findall(r'[^a-zA-Z0-9]', x)))
+
+    print("Structural Features Extracted Successfully!")
+    return balanced_data
+
+
+def tfidf_vectorization(balanced_data):
+    """
+    Apply TF-IDF vectorization to URLs.
+    """
+    vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(3, 5))
+    tfidf_features = vectorizer.fit_transform(balanced_data['url'])
+
+    print("TF-IDF Vectorization Applied Successfully!")
+    return tfidf_features, vectorizer
+
+
 if __name__ == "__main__":
     # File paths
     malicious_file = "malicious_phish.csv"
@@ -196,6 +223,17 @@ if __name__ == "__main__":
     visualize_url_length_distribution(final_balanaced)
     generate_descriptive_statistics(final_balanaced)
     url_structure_analysis(final_balanaced)
+
+    # step 5: 
+
+
+    # step 6: 
+    final_balanaced = structural_feature_extraction(final_balanaced)
+    tfidf_features, vectorizer = tfidf_vectorization(final_balanaced)
+
+    # Save structural features to CSV for further use
+    final_balanaced.to_csv('balanced_data_with_features.csv', index=False)
+    print("Structural Features saved successfully to balanced_data_with_features.csv")
 
 
 
